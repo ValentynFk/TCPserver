@@ -167,7 +167,7 @@ int main() {
             (struct sockaddr*)&client_address, &client_len);
         if (!ISSOCKETVALID(client_socket)) {
             fprintf(stderr, "accept() failed. (%d)\n", errno);
-            break;
+            continue;
         }
         printf("================================================================================\n");
         printf("Client is connected... ");
@@ -178,7 +178,7 @@ int main() {
         printf("Client address is: %s\n", address_buffer);
 
         if (read_request_and_send_response(client_socket)) {
-            break;
+            continue;
         }
 
         printf("Closing connection...\n");
