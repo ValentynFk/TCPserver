@@ -124,21 +124,26 @@ int read_request_and_send_response(const SOCKET socket_descriptor) {
 
     printf("Sending response...\n");
     int bytes_sent = 0;
-    const char *response =
+    const char *beginning =
         "HTTP/1.1 200 OK\r\n"
         "Connection: close\r\n"
-        "Content-Type: text/plain\r\n\r\n"
-        "You have sent me this message:\r\n";
+        "Content-Type: text/html\r\n\r\n"
+        "<!DOCTYPE html>\r\n"
+        "<h1 style=\"text-align:center;\">You have sent me this message:</h1>\r\n";
     time_t timer;
     time(&timer);
     const char *time_msg = ctime(&timer);
+    char *ending = malloc(strlen(time_msg) + 30);
+    memcpy(ending, "<br /><br />\r\n<i>\r\n", 20);
+    strcat(ending, time_msg);
+    strcat(ending, "</i>");
 
-    bytes_sent = send(socket_descriptor, response, strlen(response), 0);
-    printf("Sent %d bytes of %d\n", bytes_sent, (int)strlen(response));
-    bytes_sent = send(socket_descriptor, request, strlen(request), 0);
+    bytes_sent = send(socket_descriptor, beginning, strlen(beginning), 0); // beginning
+    printf("Sent %d bytes of %d\n", bytes_sent, (int)strlen(beginning));
+    bytes_sent = send(socket_descriptor, request, strlen(request), 0);     // echo reponse
     printf("Sent %d bytes of %d\n", bytes_sent, bytes_received);
-    bytes_sent = send(socket_descriptor, time_msg, strlen(time_msg), 0);
-    printf("Sent %d bytes of %d\n", bytes_sent, (int)strlen(time_msg));
+    bytes_sent = send(socket_descriptor, ending, strlen(ending), 0);       // ending
+    printf("Sent %d bytes of %d\n", bytes_sent, (int)strlen(ending));
     return 0;
 }
 
