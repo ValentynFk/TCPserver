@@ -16,6 +16,8 @@
 #include <ctype.h>
 #include <time.h>
 
+char *gp_host_url;
+
 // Socket descriptor and validator
 #define SOCKET int
 #define ISSOCKETVALID(s) ((s) >= 0)
@@ -80,6 +82,13 @@ int configure_server_address(struct addrinfo **r_address) {
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags    = AI_PASSIVE;
     getaddrinfo(chosen_address, "8080", &hints, r_address);
+    
+    // Fill in the html-formatted URL of this host
+    gp_host_url = malloc(500);
+    memcpy(gp_host_url, "\r\n<br /><b><a href=\"http://", 30);
+    strcat(gp_host_url, (chosen_address != NULL)? chosen_address : "localhost");
+    strcat(gp_host_url, ":8080/\">Click</a> to reload.</b><br /><br />\r\n");
+    
     return 0;
 }
 
@@ -126,7 +135,7 @@ int read_request_and_send_response(const SOCKET socket_descriptor) {
     int bytes_sent = 0;
     const char *beginning =
         "HTTP/1.1 200 OK\r\n"
-        "Connection: close\r\n"
+        "Connection: keep-alive\r\n"
         "Content-Type: text/html\r\n\r\n"
         "<!DOCTYPE html>\r\n"
         "<h1 style=\"text-align:center;\">You have sent me this message:</h1>\r\n";
@@ -138,11 +147,13 @@ int read_request_and_send_response(const SOCKET socket_descriptor) {
     strcat(ending, time_msg);
     strcat(ending, "</i>");
 
-    bytes_sent = send(socket_descriptor, beginning, strlen(beginning), 0); // beginning
+    bytes_sent = send(socket_descriptor, beginning, strlen(beginning), 0);     // beginning
     printf("Sent %d bytes of %d\n", bytes_sent, (int)strlen(beginning));
-    bytes_sent = send(socket_descriptor, request, strlen(request), 0);     // echo reponse
+    bytes_sent = send(socket_descriptor, gp_host_url, strlen(gp_host_url), 0); // href with current URL
+    printf("Sent %d bytes of %d\n", bytes_sent, (int)strlen(gp_host_url));
+    bytes_sent = send(socket_descriptor, request, strlen(request), 0);         // echo reponse
     printf("Sent %d bytes of %d\n", bytes_sent, bytes_received);
-    bytes_sent = send(socket_descriptor, ending, strlen(ending), 0);       // ending
+    bytes_sent = send(socket_descriptor, ending, strlen(ending), 0);           // ending
     printf("Sent %d bytes of %d\n", bytes_sent, (int)strlen(ending));
     return 0;
 }
@@ -190,6 +201,8 @@ int main() {
         close(client_socket);
         printf("================================================================================\n");
     }
+
+    free(gp_host_url);
 
     return 0;
 }
